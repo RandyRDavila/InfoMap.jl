@@ -8,6 +8,7 @@ using SimpleWeightedGraphs
 include("flow-modeling.jl")
 include("two-level-map-equation.jl")
 
+
 function infomap(g::AbstractGraph; max_iter = 1_000)
     M0 = [[v] for v in Graphs.vertices(g)]
     i = 1
@@ -20,13 +21,14 @@ function infomap(g::AbstractGraph; max_iter = 1_000)
             v for v in Graphs.neighbors(g, random_node) if !(v in M0[target_community])
         ]
         iter = 1
-        while isempty(possible_neighbors) && iter < max_iter
+        while isempty(possible_neighbors)
             random_node = rand(Graphs.vertices(g))
             target_community = findfirst(m -> random_node in m, M0)
             possible_neighbors = [
                 v for v in Graphs.neighbors(g, random_node) if !(v in M0[target_community])
             ]
             iter += 1
+            iter > 100 && return M0
         end
 
         target_neighbor = rand(possible_neighbors)
@@ -42,8 +44,8 @@ function infomap(g::AbstractGraph; max_iter = 1_000)
         abs(L(g, M1) - L(g, M0)) < 1e-6 && return M0
 
         if L(g, M1) < L(g, M0)
-            println("Old code length: ", L(g, M0))
-            println("New code length: ", L(g, M1))
+            # println("Old code length: ", L(g, M0))
+            # println("New code length: ", L(g, M1))
             M0 = deepcopy(M1)
         end
         i += 1
