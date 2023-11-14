@@ -8,7 +8,7 @@ using SimpleWeightedGraphs
 include("flow-modeling.jl")
 include("two-level-map-equation.jl")
 
-function info_map(g::AbstractGraph; max_iter = 1_000)
+function infomap(g::AbstractGraph; max_iter = 1_000)
     M0 = [[v] for v in Graphs.vertices(g)]
     i = 1
     while i < max_iter
@@ -64,6 +64,6 @@ export code_length_index_module
 export map_equation
 export L
 
-export info_map
+export infomap
 
 end
