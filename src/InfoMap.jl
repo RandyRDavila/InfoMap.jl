@@ -7,13 +7,15 @@ using SimpleWeightedGraphs
 
 include("flow-modeling.jl")
 include("two-level-map-equation.jl")
+include("set-operations.jl")
 
 
 function infomap(g::AbstractGraph; max_iter = 1_000)
     M0 = [[v] for v in Graphs.vertices(g)]
     i = 1
     while i < max_iter
-        random_node = rand(Graphs.vertices(g))
+        good_nodes = find_nodes_with_neighbors_in_different_communities(g, M0)
+        random_node = rand(good_nodes)
         # Find random_node's community
         target_community = findfirst(m -> random_node in m, M0)
 
@@ -22,8 +24,8 @@ function infomap(g::AbstractGraph; max_iter = 1_000)
         ]
         iter = 1
         while isempty(possible_neighbors)
-            random_node = rand(Graphs.vertices(g))
-            target_community = findfirst(m -> random_node in m, M0)
+            good_nodes = find_nodes_with_neighbors_in_different_communities(g, M0)
+            random_node = rand(good_nodes)
             possible_neighbors = [
                 v for v in Graphs.neighbors(g, random_node) if !(v in M0[target_community])
             ]
