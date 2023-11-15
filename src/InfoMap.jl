@@ -9,7 +9,60 @@ include("flow-modeling.jl")
 include("two-level-map-equation.jl")
 include("set-operations.jl")
 
+"""
+    infomap(g::AbstractGraph; max_iter = 1_000)::Vector{Vector{Int64}}
 
+Perform the Infomap community detection algorithm on a graph `g`.
+
+This function implements the Infomap algorithm, which is used for detecting
+communities or modules in a network. It starts with each node in its own
+community and iteratively moves nodes between communities to minimize the map
+equation value, a measure of the effectiveness of the network partitioning.
+
+# Arguments
+- `g::AbstractGraph`: The graph on which to perform community detection.
+- `max_iter::Int = 1_000`: (Optional) Maximum number of iterations to perform.
+ Default is 1,000.
+
+# Returns
+- `Vector{Vector{Int64}}`: A vector of vectors, where each inner vector contains the node
+indices of a detected community.
+
+# Behavior
+- The algorithm selects nodes with neighbors in different communities and
+attempts to move them to optimize the map equation value.
+- If a node has no neighbors outside its current community, the algorithm
+selects another node.
+- The process stops when the change in the map equation value falls below
+a threshold (1e-6) or when the maximum number of iterations is reached.
+
+# Example
+
+```julia
+julia> using Graphs, InfoMap
+
+julia> g = SimpleGraph(6)
+
+julia> add_edge!(g, 1, 2)
+
+julia> add_edge!(g, 1, 3)
+
+julia> add_edge!(g, 2, 3)
+
+julia> add_edge!(g, 2, 4)
+
+julia> add_edge!(g, 4, 5)
+
+julia> add_edge!(g, 4, 6)
+
+julia> add_edge!(g, 5, 6)
+
+julia> infomap(g)
+2-element Vector{Vector{Int64}}:
+ [1, 3, 2]
+ [4, 6, 5]
+```
+"""
 function infomap(g::AbstractGraph; max_iter = 1_000)
     M0 = [[v] for v in Graphs.vertices(g)]
     i = 1
