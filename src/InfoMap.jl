@@ -113,6 +113,7 @@ function infomap(
             if new_map < old_map
                 # If so, keep the new partition and map equation value.
                 old_map = new_map
+                break
             else
                 # Otherwise, move the node back to its original community.
                 move_node!(old_partition, target_node, new_community, target_community)
