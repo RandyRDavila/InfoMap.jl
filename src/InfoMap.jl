@@ -70,27 +70,27 @@ function infomap(
     tol = 1e-6
 )
     # Initialize each node to be in its own community.
-    old_partition = [[v] for v in Graphs.vertices(g)]
+    partition = [[v] for v in Graphs.vertices(g)]
 
     # Find the initial map equation value.
-    old_map = map_equation(g, old_partition)
+    old_map = map_equation(g, partition)
 
     for i in 1:max_iter
         # Find nodes with at least one neighbor in different communities.
-        good_nodes = find_nodes_with_neighbors_in_different_communities(g, old_partition)
+        good_nodes = find_nodes_with_neighbors_in_different_communities(g, partition)
 
         # If there are no such nodes, we're done.
-        isempty(good_nodes) && return old_partition
+        isempty(good_nodes) && return partition
 
         # Otherwise, select a node from the list of good nodes.
         for target_node in good_nodes
 
             # Find the community of the target node.
-            target_community = find_community(old_partition, target_node)
+            target_community = find_community(partition, target_node)
 
             # Find the neighbors of the target node that are not in the same community.
             possible_neighbors = [
-                v for v in Graphs.neighbors(g, target_node) if !in_community(old_partition[target_community], v)
+                v for v in Graphs.neighbors(g, target_node) if !in_community(partition[target_community], v)
             ]
 
             # If there are no such neighbors, select the next node in the list.
@@ -100,14 +100,14 @@ function infomap(
             target_neighbor = rand(possible_neighbors)
 
             # Find the community of the target neighbor.
-            new_community = find_community(old_partition, target_neighbor)
+            new_community = find_community(partition, target_neighbor)
 
             # Move the node and find the new map equation value.
-            move_node!(old_partition, target_node, target_community, new_community)
-            new_map = map_equation(g, old_partition)
+            move_node!(partition, target_node, target_community, new_community)
+            new_map = map_equation(g, partition)
 
             # If the change in the map equation value is below the threshold, we're done.
-            abs(new_map - old_map) < tol && return old_partition
+            abs(new_map - old_map) < tol && return partition
 
             # Otherwise, check if the new map equation value is lower than the old one.
             if new_map < old_map
@@ -116,12 +116,12 @@ function infomap(
                 break
             else
                 # Otherwise, move the node back to its original community.
-                move_node!(old_partition, target_node, new_community, target_community)
+                move_node!(partition, target_node, new_community, target_community)
             end
 
         end
     end
-    return old_partition
+    return partition
 end
 
 
