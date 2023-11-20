@@ -8,6 +8,7 @@ using SimpleWeightedGraphs
 include("flow-modeling.jl")
 include("two-level-map-equation.jl")
 include("set-operations.jl")
+include("community-functions.jl")
 
 """
     infomap(g::AbstractGraph; max_iter = 1_000)::Vector{Vector{Int64}}
@@ -63,50 +64,65 @@ julia> infomap(g)
  [4, 6, 5]
 ```
 """
-function infomap(g::AbstractGraph; max_iter = 1_000)
-    M0 = [[v] for v in Graphs.vertices(g)]
-    i = 1
-    while i < max_iter
-        good_nodes = find_nodes_with_neighbors_in_different_communities(g, M0)
-        random_node = rand(good_nodes)
-        # Find random_node's community
-        target_community = findfirst(m -> random_node in m, M0)
+function infomap(
+    g::AbstractGraph;
+    max_iter = 1_000,
+    tol = 1e-6
+)
+    # Initialize each node to be in its own community.
+    old_partition = [[v] for v in Graphs.vertices(g)]
 
-        possible_neighbors = [
-            v for v in Graphs.neighbors(g, random_node) if !(v in M0[target_community])
-        ]
-        iter = 1
-        while isempty(possible_neighbors)
-            good_nodes = find_nodes_with_neighbors_in_different_communities(g, M0)
-            random_node = rand(good_nodes)
+    # Find the initial map equation value.
+    old_map = map_equation(g, old_partition)
+
+    for i in 1:max_iter
+        # Find nodes with at least one neighbor in different communities.
+        good_nodes = find_nodes_with_neighbors_in_different_communities(g, old_partition)
+
+        # If there are no such nodes, we're done.
+        isempty(good_nodes) && return old_partition
+
+        # Otherwise, select a node from the list of good nodes.
+        for target_node in good_nodes
+
+            # Find the community of the target node.
+            target_community = find_community(old_partition, target_node)
+
+            # Find the neighbors of the target node that are not in the same community.
             possible_neighbors = [
-                v for v in Graphs.neighbors(g, random_node) if !(v in M0[target_community])
+                v for v in Graphs.neighbors(g, target_node) if !in_community(old_partition[target_community], v)
             ]
-            iter += 1
-            iter > 100 && return M0
+
+            # If there are no such neighbors, select the next node in the list.
+            isempty(possible_neighbors) && continue
+
+            # Otherwise, select a neighbor at random.
+            target_neighbor = rand(possible_neighbors)
+
+            # Find the community of the target neighbor.
+            new_community = find_community(old_partition, target_neighbor)
+
+            # Move the node and find the new map equation value.
+            move_node!(old_partition, target_node, target_community, new_community)
+            new_map = map_equation(g, old_partition)
+
+            # If the change in the map equation value is below the threshold, we're done.
+            abs(new_map - old_map) < tol && return old_partition
+
+            # Otherwise, check if the new map equation value is lower than the old one.
+            if new_map < old_map
+                # If so, keep the new partition and map equation value.
+                old_map = new_map
+            else
+                # Otherwise, move the node back to its original community.
+                move_node!(old_partition, target_node, new_community, target_community)
+            end
+
         end
-
-        target_neighbor = rand(possible_neighbors)
-
-        new_community = findfirst(m -> target_neighbor in m, M0)
-
-        M1 = deepcopy(M0)
-
-        push!(M1[new_community], random_node)
-        M1[target_community] = setdiff(M1[target_community], [random_node])
-        isempty(M1[target_community]) && deleteat!(M1, target_community)
-
-        abs(L(g, M1) - L(g, M0)) < 1e-6 && return M0
-
-        if L(g, M1) < L(g, M0)
-            # println("Old code length: ", L(g, M0))
-            # println("New code length: ", L(g, M1))
-            M0 = deepcopy(M1)
-        end
-        i += 1
     end
-    return M0
+    return old_partition
 end
+
 
 export transition_probability
 export stationary_node_visit_rate
@@ -118,9 +134,10 @@ export codelength_in_module
 export H
 export q_in
 export code_length_index_module
-export map_equation
 export L
 
+
+export map_equation
 export infomap
 
 end
