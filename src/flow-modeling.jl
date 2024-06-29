@@ -21,7 +21,7 @@ function transition_probability(
     u::Int64,
     v::Int64,
 )
-    w(u, v) = SimpleWeightedGraph.get_weight(g, u, v)
+    w(u, v) = SimpleWeightedGraphs.get_weight(g, u, v)
     return w(u, v) / sum(w(u, v) for v in Graphs.neighbors(g, u))
 end
 
@@ -76,7 +76,7 @@ function stationary_node_visit_rate(
     g::SimpleWeightedGraph,
     v::Int64,
 )
-    w(u, v) = SimpleWeightedGraph.get_weight(g, u, v)
+    w(u, v) = SimpleWeightedGraphs.get_weight(g, u, v)
     s(v) = sum(w(u, v) for u in Graphs.neighbors(g, v)) # Node v's strength
 
     return s(v) / sum(s(u) for u in Graphs.vertices(g))
